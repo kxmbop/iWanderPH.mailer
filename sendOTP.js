@@ -1,13 +1,22 @@
 const express = require("express");
 const nodemailer = require("nodemailer");
+const cors = require("cors"); // Import CORS
 const path = require("path");
 const dotenv = require("dotenv");
+
 dotenv.config();
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = 3000;
 
-app.use(express.json());  // To handle JSON body
+// Use CORS middleware
+app.use(cors({
+  origin: 'http://192.168.254.176:4200', // Allow requests from your Angular app
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type'],
+}));
+
+app.use(express.json()); // To handle JSON body
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -21,20 +30,18 @@ const transporter = nodemailer.createTransport({
 });
 
 app.post("/send-otp", (req, res) => {
-  const { email } = req.body;
+  const { email, otp } = req.body;
 
-  if (!email) {
-    return res.status(400).send("Email is required");
+  if (!email || !otp) {
+    return res.status(400).send("Email and OTP are required");
   }
-
-  const otp = Math.floor(100000 + Math.random() * 900000); // Generate OTP
 
   const mailOptions = {
     from: {
       name: "iWanderPH",
       address: process.env.USER
     },
-    to: [email], // Send OTP to the provided email
+    to: [email],
     subject: "Verify Your Email - iWanderPH",
     text: `Your iWanderPH verification code is: ${otp}`, 
     html: `
@@ -59,8 +66,8 @@ app.post("/send-otp", (req, res) => {
     attachments: [
       {
         filename: "sample.png",
-        path: path.join(__dirname, 'sample.png'), 
-        cid: 'iwanderph-logo' // Content ID for inline image
+        path: path.join(__dirname, 'sample.png'),
+        cid: 'iwanderph-logo' 
       }
     ]
   };
@@ -74,5 +81,5 @@ app.post("/send-otp", (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`Mailer service listening at http://localhost:${port}`);
+  console.log(`Mailer service running locally at http://localhost:${port}`);
 });
